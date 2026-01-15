@@ -7,7 +7,7 @@ function App() {
   const user = {
     name: "Alex Johnson",
     age: 28,
-    bio: "Passionate traveler who has visited over 30 countries. Love exploring new cultures, trying local cuisines, and capturing beautiful moments through photography.",
+    bio: "Passionate traveler who has visited over 30 countries.",
     hobbies: "Photography, Hiking, Cooking",
     location: "New York, USA"
   };
