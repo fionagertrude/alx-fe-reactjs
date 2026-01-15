@@ -4,10 +4,8 @@ const UserProfile = (props) => {
       <h2 style={{ color: 'blue' }}>{props.name}</h2>
       <p>Age: <span style={{ fontWeight: 'bold' }}>{props.age}</span></p>
       <p>Bio: {props.bio}</p>
-      {props.hobbies && <p>Hobbies: {props.hobbies}</p>}
-      {props.location && <p>Location: {props.location}</p>}
     </div>
-  );
-};
+  )
+}
 
-export default UserProfile;
+export default UserProfile

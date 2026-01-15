@@ -1,31 +1,23 @@
-import Header from "./components/Header";
-import UserProfile from "./components/UserProfile";
-import MainContent from "./components/MainContent";
-import Footer from "./components/Footer";
+import Header from './components/Header'
+import UserProfile from './components/UserProfile'
+import MainContent from './components/MainContent'
+import Footer from './components/Footer'
 
 function App() {
   const user = {
-    name: "Alex Johnson",
-    age: 28,
-    bio: "Passionate traveler who has visited over 30 countries.",
-    hobbies: "Photography, Hiking, Cooking",
-    location: "New York, USA"
-  };
+    name: "John Doe",
+    age: 30,
+    bio: "Software developer and travel enthusiast."
+  }
 
   return (
-    <div className="App">
+    <div>
       <Header />
-      <UserProfile 
-        name={user.name}
-        age={user.age}
-        bio={user.bio}
-        hobbies={user.hobbies}
-        location={user.location}
-      />
+      <UserProfile name={user.name} age={user.age} bio={user.bio} />
       <MainContent />
       <Footer />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
