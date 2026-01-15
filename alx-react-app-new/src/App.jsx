@@ -1,15 +1,27 @@
-import WelcomeMessage from './components/WelcomeMessage';
-import Header from './Header';
-import MainContent from './MainContent';
-import Footer from './Footer';
-import UserProfile from './components/UserProfile';
+import Header from "./components/Header";
+import UserProfile from "./components/UserProfile";
+import MainContent from "./components/MainContent";
+import Footer from "./components/Footer";
 
 function App() {
+  const user = {
+    name: "Alex Johnson",
+    age: 28,
+    bio: "Passionate traveler who has visited over 30 countries. Love exploring new cultures, trying local cuisines, and capturing beautiful moments through photography.",
+    hobbies: "Photography, Hiking, Cooking",
+    location: "New York, USA"
+  };
+
   return (
-    <div>
+    <div className="App">
       <Header />
-      <WelcomeMessage />
-      <UserProfile name="Alice" age={25} bio="Loves hiking and photography" />
+      <UserProfile 
+        name={user.name}
+        age={user.age}
+        bio={user.bio}
+        hobbies={user.hobbies}
+        location={user.location}
+      />
       <MainContent />
       <Footer />
     </div>
