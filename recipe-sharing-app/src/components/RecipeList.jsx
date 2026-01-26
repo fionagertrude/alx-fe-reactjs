@@ -1,24 +1,56 @@
 import React from 'react';
-import useRecipeStore from './recipeStore';
+import { Link } from 'react-router-dom';
+import useRecipeStore from '../store/recipeStore';
 
 function RecipeList() {
   const recipes = useRecipeStore((state) => state.recipes);
+  const deleteRecipe = useRecipeStore((state) => state.deleteRecipe);
+
+  const handleDelete = (id, title) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      deleteRecipe(id);
+    }
+  };
 
   return (
     <div className="recipe-list">
       <h2>Recipes</h2>
       {recipes.length === 0 ? (
-        <p>No recipes yet. Add one below!</p>
+        <p className="no-recipes">No recipes yet. Add one below!</p>
       ) : (
-        recipes.map((recipe) => (
-          <div key={recipe.id} className="recipe-card">
-            <h3>{recipe.title}</h3>
-            <p>{recipe.description}</p>
-          </div>
-        ))
+        <div className="recipes-grid">
+          {recipes.map((recipe) => (
+            <div key={recipe.id} className="recipe-card">
+              <div className="recipe-card-content">
+                <h3>
+                  <Link to={`/recipe/${recipe.id}`} className="recipe-link">
+                    {recipe.title}
+                  </Link>
+                </h3>
+                <p>{recipe.description}</p>
+                
+                <div className="recipe-card-meta">
+                  <span className="meta-badge">⏱️ {recipe.prepTime + recipe.cookTime} min</span>
+                  <span className="meta-badge">👨‍👩‍👧‍👦 {recipe.servings} servings</span>
+                </div>
+              </div>
+              
+              <div className="recipe-card-actions">
+                <Link to={`/recipe/${recipe.id}`} className="view-btn">View</Link>
+                <Link to={`/edit/${recipe.id}`} className="edit-btn">Edit</Link>
+                <button 
+                  onClick={() => handleDelete(recipe.id, recipe.title)} 
+                  className="delete-btn"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-export default RecipeList;  
+export default RecipeList;

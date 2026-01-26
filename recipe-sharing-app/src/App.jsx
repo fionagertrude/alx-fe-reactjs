@@ -1,39 +1,39 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import RecipeList from './components/RecipeList';
 import AddRecipeForm from './components/AddRecipeForm';
-import useRecipeStore from './components/recipeStore';
+import RecipeDetails from './components/RecipeDetails';
+import EditRecipeForm from './components/EditRecipeForm';
 
 function App() {
-  const setRecipes = useRecipeStore((state) => state.setRecipes);
-
-  // Initialize with some sample recipes
-  useEffect(() => {
-    setRecipes([
-      {
-        id: 1,
-        title: 'Spaghetti Carbonara',
-        description: 'Classic Italian pasta dish with eggs, cheese, pancetta, and black pepper.',
-      },
-      {
-        id: 2,
-        title: 'Chicken Curry',
-        description: 'Aromatic chicken curry with coconut milk and spices.',
-      },
-    ]);
-  }, [setRecipes]);
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>🍽️ Recipe Sharing App</h1>
-        <p>Share and discover delicious recipes!</p>
-      </header>
-      <main className="app-content">
-        <RecipeList />
-        <AddRecipeForm />
-      </main>
-    </div>
+    <Router>
+      <div className="app">
+        <header className="app-header">
+          <h1>🍽️ Recipe Sharing App</h1>
+          <p>Share and discover delicious recipes!</p>
+        </header>
+        
+        <main className="app-content">
+          <Routes>
+            <Route path="/" element={
+              <>
+                <RecipeList />
+                <AddRecipeForm />
+              </>
+            } />
+            <Route path="/recipe/:id" element={<RecipeDetails />} />
+            <Route path="/edit/:id" element={<EditRecipeForm />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+        
+        <footer className="app-footer">
+          <p>Recipe Sharing App © 2024</p>
+        </footer>
+      </div>
+    </Router>
   );
 }
 

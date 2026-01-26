@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import useRecipeStore from '../store/recipeStore';
 
-function AddRecipeForm() {
+function EditRecipeForm() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const addRecipe = useRecipeStore((state) => state.addRecipe);
+  const recipe = useRecipeStore((state) =>
+    state.recipes.find((recipe) => recipe.id === Number(id))
+  );
+  const updateRecipe = useRecipeStore((state) => state.updateRecipe);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -15,6 +20,20 @@ function AddRecipeForm() {
     servings: '',
   });
 
+  useEffect(() => {
+    if (recipe) {
+      setFormData({
+        title: recipe.title || '',
+        description: recipe.description || '',
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.join('\n') : '',
+        instructions: recipe.instructions || '',
+        prepTime: recipe.prepTime || '',
+        cookTime: recipe.cookTime || '',
+        servings: recipe.servings || '',
+      });
+    }
+  }, [recipe]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -23,15 +42,15 @@ function AddRecipeForm() {
     }));
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = (e) => {
+    e.preventDefault();
     
     if (!formData.title.trim() || !formData.description.trim()) {
-      alert('Please fill in both title and description');
+      alert('Please fill in at least title and description');
       return;
     }
 
-    const newRecipe = {
+    const updatedRecipe = {
       ...formData,
       ingredients: formData.ingredients.split('\n').map(item => item.trim()).filter(item => item),
       prepTime: parseInt(formData.prepTime) || 0,
@@ -39,25 +58,26 @@ function AddRecipeForm() {
       servings: parseInt(formData.servings) || 1,
     };
 
-    addRecipe(newRecipe);
-    
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      ingredients: '',
-      instructions: '',
-      prepTime: '',
-      cookTime: '',
-      servings: '',
-    });
-    
-    alert('Recipe added successfully!');
+    updateRecipe(Number(id), updatedRecipe);
+    navigate(`/recipe/${id}`);
   };
 
+  if (!recipe) {
+    return (
+      <div className="edit-recipe-form">
+        <h2>Recipe not found</h2>
+        <Link to="/" className="back-btn">Back to Recipes</Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="add-recipe-form">
-      <h2>Add New Recipe</h2>
+    <div className="edit-recipe-form">
+      <div className="form-header">
+        <Link to={`/recipe/${id}`} className="back-btn">← Back to Recipe</Link>
+        <h2>Edit Recipe: {recipe.title}</h2>
+      </div>
+      
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="title">Recipe Title *</label>
@@ -157,12 +177,17 @@ function AddRecipeForm() {
           />
         </div>
 
-        <button type="submit" className="submit-btn">
-          Add Recipe
-        </button>
+        <div className="form-actions">
+          <button type="button" onClick={() => navigate(`/recipe/${id}`)} className="cancel-btn">
+            Cancel
+          </button>
+          <button type="submit" className="save-btn">
+            Save Changes
+          </button>
+        </div>
       </form>
     </div>
   );
 }
 
-export default AddRecipeForm;
+export default EditRecipeForm;
