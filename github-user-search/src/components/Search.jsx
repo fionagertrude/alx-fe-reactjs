@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { advancedSearch } from '../services/githubService';
+import { advancedSearch, buildGitHubSearchUrl } from '../services/githubService';
 import UserCard from './UserCard';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -22,6 +22,7 @@ function Search() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [apiUrl, setApiUrl] = useState('');
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -52,10 +53,19 @@ function Search() {
     setCurrentPage(1);
 
     try {
+      // Build and display the API URL
+      const url = buildGitHubSearchUrl(searchParams);
+      setApiUrl(url);
+      
       const results = await advancedSearch(searchParams, 1);
       setSearchResults(results.items || []);
       setTotalResults(results.total_count || 0);
-      setHasMore(results.items?.length === 10 && results.total_count > 10);
+      setHasMore(results.has_next_page || false);
+      
+      // Log for debugging
+      console.log('Search results:', results);
+      console.log('Total results:', results.total_count);
+      console.log('API URL used:', url);
     } catch (err) {
       setError(err.message || 'An error occurred while searching');
       console.error('Search error:', err);
@@ -66,13 +76,15 @@ function Search() {
 
   // Load more results
   const loadMore = async () => {
+    if (!hasMore || isLoading) return;
+    
     setIsLoading(true);
     try {
       const nextPage = currentPage + 1;
       const results = await advancedSearch(searchParams, nextPage);
       setSearchResults(prev => [...prev, ...(results.items || [])]);
       setCurrentPage(nextPage);
-      setHasMore(results.items?.length === 10 && results.total_count > nextPage * 10);
+      setHasMore(results.has_next_page || false);
     } catch (err) {
       setError(err.message || 'Failed to load more results');
     } finally {
@@ -93,6 +105,7 @@ function Search() {
     setSearchResults([]);
     setError(null);
     setTotalResults(0);
+    setApiUrl('');
   };
 
   // Popular programming languages for suggestions
@@ -100,6 +113,25 @@ function Search() {
     'JavaScript', 'Python', 'Java', 'TypeScript', 'C++', 'C#', 'PHP', 'Ruby',
     'Go', 'Rust', 'Swift', 'Kotlin', 'Dart', 'R', 'Scala', 'Perl'
   ];
+
+  // Example searches
+  const exampleSearches = [
+    { username: 'torvalds', label: 'Linus Torvalds' },
+    { location: 'San Francisco', label: 'SF Developers' },
+    { minRepos: 100, label: 'Experienced Developers (100+ repos)' },
+    { language: 'JavaScript', minFollowers: 1000, label: 'Top JS Developers' },
+  ];
+
+  const handleExampleSearch = (example) => {
+    setSearchParams({
+      username: example.username || '',
+      location: example.location || '',
+      minRepos: example.minRepos || '',
+      minFollowers: example.minFollowers || '',
+      language: example.language || '',
+      sortBy: 'best-match',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +143,7 @@ function Search() {
               GitHub User Search
             </h1>
             <p className="text-gray-300 text-lg">
-              Advanced search for GitHub users with multiple filters
+              Advanced search for GitHub users using GitHub Search API
             </p>
           </div>
         </div>
@@ -247,8 +279,8 @@ function Search() {
                       disabled={isLoading}
                     >
                       <option value="best-match">Best Match</option>
-                      <option value="followers">Followers</option>
-                      <option value="repositories">Repositories</option>
+                      <option value="followers">Most Followers</option>
+                      <option value="repositories">Most Repositories</option>
                       <option value="joined">Recently Joined</option>
                     </select>
                   </div>
@@ -268,7 +300,7 @@ function Search() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Searching...
+                      Searching GitHub...
                     </>
                   ) : (
                     'Search Users'
@@ -287,6 +319,19 @@ function Search() {
             </div>
           </form>
 
+          {/* API URL Display */}
+          {apiUrl && (
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">GitHub API Request:</p>
+              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
+                {decodeURIComponent(apiUrl)}
+              </code>
+              <p className="text-xs text-gray-500 mt-2">
+                Note: This shows the decoded URL for readability. The actual request uses proper URL encoding.
+              </p>
+            </div>
+          )}
+
           {/* Search Tips */}
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="font-semibold text-blue-800 mb-2">💡 Search Tips:</h3>
@@ -297,6 +342,30 @@ function Search() {
               <li>Filter by language to find experts in specific technologies</li>
               <li>Combine multiple filters for precise results</li>
             </ul>
+            <div className="mt-3 text-xs text-blue-600">
+              <p className="font-medium">GitHub Search Syntax Examples:</p>
+              <code className="block mt-1 bg-blue-100 p-2 rounded">
+                username in:login location:&quot;San Francisco&quot; repos:≥100 followers:≥1000 language:JavaScript
+              </code>
+            </div>
+          </div>
+
+          {/* Quick Search Examples */}
+          <div className="mt-6">
+            <h3 className="font-semibold text-gray-700 mb-3">Quick Examples:</h3>
+            <div className="flex flex-wrap gap-2">
+              {exampleSearches.map((example, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleExampleSearch(example)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition duration-200"
+                  disabled={isLoading}
+                >
+                  {example.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -323,12 +392,24 @@ function Search() {
         {searchResults.length > 0 && (
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Search Results
-                <span className="ml-2 text-lg font-normal text-gray-600">
-                  ({totalResults.toLocaleString()} users found)
-                </span>
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Search Results
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  Found {totalResults.toLocaleString()} user{totalResults !== 1 ? 's' : ''}
+                  {searchParams.location && ` in ${searchParams.location}`}
+                  {searchParams.language && ` using ${searchParams.language}`}
+                </p>
+              </div>
+              
+              {/* Results Stats */}
+              <div className="text-right">
+                <div className="text-sm text-gray-500">
+                  Page {currentPage}
+                  {hasMore && ` • ${Math.ceil(totalResults / 10) - currentPage} more pages`}
+                </div>
+              </div>
             </div>
 
             {/* Results Grid */}
@@ -346,8 +427,22 @@ function Search() {
                   disabled={isLoading}
                   className="px-8 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Loading...' : 'Load More Users'}
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading more users...
+                    </>
+                  ) : (
+                    'Load More Users'
+                  )}
                 </button>
+                <p className="text-sm text-gray-500 mt-2">
+                  Showing {searchResults.length} of {Math.min(totalResults, 1000)} users
+                  {totalResults > 1000 && ' (GitHub API limits to first 1000 results)'}
+                </p>
               </div>
             )}
           </div>
@@ -364,10 +459,31 @@ function Search() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search</h3>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Search GitHub</h3>
             <p className="text-gray-500 max-w-md mx-auto">
               Enter search criteria above to find GitHub users. Use advanced options for precise filtering.
             </p>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">Search Tips:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Username: "torvalds in:login"</li>
+                  <li>• Location: "location:\"San Francisco\""</li>
+                  <li>• Repositories: "repos:≥100"</li>
+                  <li>• Followers: "followers:≥1000"</li>
+                  <li>• Language: "language:JavaScript"</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h4 className="font-semibold text-green-800 mb-2">API Info:</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>• Endpoint: /search/users</li>
+                  <li>• Rate limit: 60 req/hour</li>
+                  <li>• Max results: 1000</li>
+                  <li>• Sorting: followers, repos, joined</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </main>
@@ -377,26 +493,31 @@ function Search() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center text-gray-600">
             <p className="mb-2">
-              Built with React & GitHub API • Rate limited to 60 requests per hour
+              GitHub User Search • Using GitHub REST API v3
             </p>
-            <div className="flex justify-center space-x-4 text-sm">
-              <a
-                href="https://docs.github.com/en/rest"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                GitHub API Docs
-              </a>
-              <span className="text-gray-400">•</span>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                GitHub
-              </a>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-sm">
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://docs.github.com/en/rest/search#search-users"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  GitHub Search API Docs
+                </a>
+                <span className="text-gray-400">•</span>
+                <a
+                  href="https://api.github.com/rate_limit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Rate Limit Status
+                </a>
+              </div>
+              <div className="text-xs text-gray-500">
+                Rate limited to 60 requests per hour without token
+              </div>
             </div>
           </div>
         </div>
