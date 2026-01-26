@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import useRecipeStore from '../store/recipeStore';
+import DeleteRecipeButton from './DeleteRecipeButton'; // Import the component
 
 function RecipeDetails() {
   const { id } = useParams();
@@ -8,8 +9,6 @@ function RecipeDetails() {
   const recipe = useRecipeStore((state) =>
     state.recipes.find((recipe) => recipe.id === Number(id))
   );
-
-  const deleteRecipe = useRecipeStore((state) => state.deleteRecipe);
 
   if (!recipe) {
     return (
@@ -20,20 +19,14 @@ function RecipeDetails() {
     );
   }
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this recipe?')) {
-      deleteRecipe(recipe.id);
-      navigate('/');
-    }
-  };
-
   return (
     <div className="recipe-details">
       <div className="recipe-header">
         <Link to="/" className="back-btn">← Back to Recipes</Link>
         <div className="recipe-actions">
           <Link to={`/edit/${recipe.id}`} className="edit-btn">Edit Recipe</Link>
-          <button onClick={handleDelete} className="delete-btn">Delete Recipe</button>
+          {/* Use the DeleteRecipeButton component */}
+          <DeleteRecipeButton recipeId={recipe.id} recipeTitle={recipe.title} />
         </div>
       </div>
       

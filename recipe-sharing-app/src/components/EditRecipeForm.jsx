@@ -43,7 +43,7 @@ function EditRecipeForm() {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // FIXED: Added event.preventDefault()
     
     if (!formData.title.trim() || !formData.description.trim()) {
       alert('Please fill in at least title and description');

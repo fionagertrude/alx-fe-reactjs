@@ -1,16 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import useRecipeStore from '../store/recipeStore';
+import DeleteRecipeButton from './DeleteRecipeButton'; // Import the component
 
 function RecipeList() {
   const recipes = useRecipeStore((state) => state.recipes);
-  const deleteRecipe = useRecipeStore((state) => state.deleteRecipe);
-
-  const handleDelete = (id, title) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      deleteRecipe(id);
-    }
-  };
 
   return (
     <div className="recipe-list">
@@ -38,12 +32,8 @@ function RecipeList() {
               <div className="recipe-card-actions">
                 <Link to={`/recipe/${recipe.id}`} className="view-btn">View</Link>
                 <Link to={`/edit/${recipe.id}`} className="edit-btn">Edit</Link>
-                <button 
-                  onClick={() => handleDelete(recipe.id, recipe.title)} 
-                  className="delete-btn"
-                >
-                  Delete
-                </button>
+                {/* Use the DeleteRecipeButton component */}
+                <DeleteRecipeButton recipeId={recipe.id} recipeTitle={recipe.title} />
               </div>
             </div>
           ))}
