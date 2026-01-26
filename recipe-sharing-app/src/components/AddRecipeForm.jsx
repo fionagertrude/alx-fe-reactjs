@@ -13,7 +13,11 @@ function AddRecipeForm() {
     prepTime: '',
     cookTime: '',
     servings: '',
+    category: '',
+    tags: '',
   });
+
+  const categories = ['Italian', 'Indian', 'Asian', 'Mexican', 'Mediterranean', 'Dessert', 'Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,6 +41,7 @@ function AddRecipeForm() {
       prepTime: parseInt(formData.prepTime) || 0,
       cookTime: parseInt(formData.cookTime) || 0,
       servings: parseInt(formData.servings) || 1,
+      tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
     };
 
     addRecipe(newRecipe);
@@ -50,9 +55,12 @@ function AddRecipeForm() {
       prepTime: '',
       cookTime: '',
       servings: '',
+      category: '',
+      tags: '',
     });
     
     alert('Recipe added successfully!');
+    navigate('/');
   };
 
   return (
@@ -88,6 +96,22 @@ function AddRecipeForm() {
         </div>
 
         <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="category">Category</label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="form-input"
+            >
+              <option value="">Select a category</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="form-group">
             <label htmlFor="prepTime">Prep Time (minutes)</label>
             <input
@@ -132,6 +156,20 @@ function AddRecipeForm() {
         </div>
 
         <div className="form-group">
+          <label htmlFor="tags">Tags (comma separated)</label>
+          <input
+            type="text"
+            id="tags"
+            name="tags"
+            value={formData.tags}
+            onChange={handleChange}
+            placeholder="pasta, dinner, quick, italian"
+            className="form-input"
+          />
+          <small className="form-help">Separate tags with commas</small>
+        </div>
+
+        <div className="form-group">
           <label htmlFor="ingredients">Ingredients (one per line)</label>
           <textarea
             id="ingredients"
@@ -157,9 +195,14 @@ function AddRecipeForm() {
           />
         </div>
 
-        <button type="submit" className="submit-btn">
-          Add Recipe
-        </button>
+        <div className="form-actions">
+          <button type="button" onClick={() => navigate('/')} className="cancel-btn">
+            Cancel
+          </button>
+          <button type="submit" className="submit-btn">
+            Add Recipe
+          </button>
+        </div>
       </form>
     </div>
   );
