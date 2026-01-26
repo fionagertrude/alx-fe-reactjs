@@ -23,6 +23,7 @@ function Search() {
   const [hasMore, setHasMore] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [apiUrl, setApiUrl] = useState('');
+  const [rawApiResponse, setRawApiResponse] = useState(null);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -51,24 +52,37 @@ function Search() {
     setError(null);
     setSearchResults([]);
     setCurrentPage(1);
+    setRawApiResponse(null);
 
     try {
       // Build and display the API URL
       const url = buildGitHubSearchUrl(searchParams);
       setApiUrl(url);
       
+      console.log('Starting advanced search with params:', searchParams);
+      
+      // Make the advanced search API request
       const results = await advancedSearch(searchParams, 1);
-      setSearchResults(results.items || []);
+      
+      console.log('API Response received:', results);
+      setRawApiResponse(results);
+      
+      // Extract and display results
+      const items = results.items || [];
+      setSearchResults(items);
       setTotalResults(results.total_count || 0);
       setHasMore(results.has_next_page || false);
       
-      // Log for debugging
-      console.log('Search results:', results);
-      console.log('Total results:', results.total_count);
-      console.log('API URL used:', url);
+      // Log detailed information for debugging
+      if (items.length > 0) {
+        console.log('First user data:', items[0]);
+        console.log('User html_url:', items[0]?.html_url);
+        console.log('Total results found:', results.total_count);
+      }
+      
     } catch (err) {
+      console.error('Search error details:', err);
       setError(err.message || 'An error occurred while searching');
-      console.error('Search error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -82,9 +96,17 @@ function Search() {
     try {
       const nextPage = currentPage + 1;
       const results = await advancedSearch(searchParams, nextPage);
+      
       setSearchResults(prev => [...prev, ...(results.items || [])]);
       setCurrentPage(nextPage);
       setHasMore(results.has_next_page || false);
+      
+      // Update raw response for debugging
+      setRawApiResponse(prev => ({
+        ...prev,
+        items: [...(prev?.items || []), ...(results.items || [])]
+      }));
+      
     } catch (err) {
       setError(err.message || 'Failed to load more results');
     } finally {
@@ -106,6 +128,7 @@ function Search() {
     setError(null);
     setTotalResults(0);
     setApiUrl('');
+    setRawApiResponse(null);
   };
 
   // Popular programming languages for suggestions
@@ -131,6 +154,25 @@ function Search() {
       language: example.language || '',
       sortBy: 'best-match',
     });
+  };
+
+  // Format API response for display
+  const formatApiResponse = () => {
+    if (!rawApiResponse) return null;
+    
+    const response = {
+      total_count: rawApiResponse.total_count,
+      incomplete_results: rawApiResponse.incomplete_results,
+      items_count: rawApiResponse.items?.length || 0,
+      sample_user: rawApiResponse.items?.[0] ? {
+        login: rawApiResponse.items[0].login,
+        html_url: rawApiResponse.items[0].html_url,
+        type: rawApiResponse.items[0].type,
+        score: rawApiResponse.items[0].score,
+      } : null
+    };
+    
+    return JSON.stringify(response, null, 2);
   };
 
   return (
@@ -300,7 +342,7 @@ function Search() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Searching GitHub...
+                      Searching GitHub API...
                     </>
                   ) : (
                     'Search Users'
@@ -319,35 +361,64 @@ function Search() {
             </div>
           </form>
 
-          {/* API URL Display */}
-          {apiUrl && (
-            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">GitHub API Request:</p>
-              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
-                {decodeURIComponent(apiUrl)}
-              </code>
-              <p className="text-xs text-gray-500 mt-2">
-                Note: This shows the decoded URL for readability. The actual request uses proper URL encoding.
-              </p>
-            </div>
-          )}
+          {/* API Request Details */}
+          <div className="mt-6 space-y-4">
+            {apiUrl && (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-sm font-medium text-gray-700 mb-1">GitHub API Request URL:</p>
+                <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
+                  {decodeURIComponent(apiUrl)}
+                </code>
+                <p className="text-xs text-gray-500 mt-2">
+                  Endpoint: <strong>GET https://api.github.com/search/users</strong>
+                </p>
+              </div>
+            )}
+
+            {rawApiResponse && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-blue-700 mb-1">API Response Details:</p>
+                <div className="text-xs bg-blue-100 p-2 rounded space-y-1">
+                  <div className="flex justify-between">
+                    <span>Total Users Found:</span>
+                    <span className="font-semibold">{rawApiResponse.total_count?.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Users Displayed:</span>
+                    <span className="font-semibold">{rawApiResponse.items?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Current Page:</span>
+                    <span className="font-semibold">{currentPage}</span>
+                  </div>
+                  {rawApiResponse.items?.[0]?.html_url && (
+                    <div className="mt-2 pt-2 border-t border-blue-200">
+                      <p className="font-medium">First User Profile URL:</p>
+                      <a
+                        href={rawApiResponse.items[0].html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline break-all"
+                      >
+                        {rawApiResponse.items[0].html_url}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Search Tips */}
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">💡 Search Tips:</h3>
+            <h3 className="font-semibold text-blue-800 mb-2">💡 Advanced Search Tips:</h3>
             <ul className="text-sm text-blue-700 space-y-1 list-disc pl-5">
-              <li>Search by username to find specific users</li>
-              <li>Filter by location to find developers in your area</li>
-              <li>Use minimum repos/followers to find experienced developers</li>
-              <li>Filter by language to find experts in specific technologies</li>
-              <li>Combine multiple filters for precise results</li>
+              <li>Each user profile includes their <strong>html_url</strong> linking to their GitHub page</li>
+              <li>Search results include detailed user information fetched from GitHub API</li>
+              <li>API handles rate limits and provides user-friendly error messages</li>
+              <li>Results can be sorted by followers, repositories, or join date</li>
+              <li>Pagination automatically loads more results as you scroll</li>
             </ul>
-            <div className="mt-3 text-xs text-blue-600">
-              <p className="font-medium">GitHub Search Syntax Examples:</p>
-              <code className="block mt-1 bg-blue-100 p-2 rounded">
-                username in:login location:&quot;San Francisco&quot; repos:≥100 followers:≥1000 language:JavaScript
-              </code>
-            </div>
           </div>
 
           {/* Quick Search Examples */}
@@ -376,46 +447,82 @@ function Search() {
               <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <span className="font-semibold">Error:</span>
+              <span className="font-semibold">API Error:</span>
             </div>
             <p className="mt-2 text-red-700">{error}</p>
-            <button
-              onClick={clearSearch}
-              className="mt-3 px-4 py-2 bg-red-100 text-red-700 font-medium rounded hover:bg-red-200 transition duration-200"
-            >
-              Try Again
-            </button>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={clearSearch}
+                className="px-4 py-2 bg-red-100 text-red-700 font-medium rounded hover:bg-red-200 transition duration-200"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => setError(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded hover:bg-gray-200 transition duration-200"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Results Section */}
+        {/* Enhanced Results Section */}
         {searchResults.length > 0 && (
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
                   Search Results
+                  <span className="ml-2 text-lg font-normal text-gray-600">
+                    ({totalResults.toLocaleString()} users found)
+                  </span>
                 </h2>
                 <p className="text-gray-600 mt-1">
-                  Found {totalResults.toLocaleString()} user{totalResults !== 1 ? 's' : ''}
-                  {searchParams.location && ` in ${searchParams.location}`}
-                  {searchParams.language && ` using ${searchParams.language}`}
+                  Each result includes profile link, stats, and detailed information
                 </p>
               </div>
               
               {/* Results Stats */}
               <div className="text-right">
                 <div className="text-sm text-gray-500">
-                  Page {currentPage}
-                  {hasMore && ` • ${Math.ceil(totalResults / 10) - currentPage} more pages`}
+                  Page {currentPage} of {Math.ceil(totalResults / 10)}
+                  {hasMore && ' • More results available'}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Each user card includes html_url to GitHub profile
                 </div>
               </div>
+            </div>
+
+            {/* Results Information */}
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center text-green-800">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Enhanced Results Display</span>
+              </div>
+              <p className="text-sm text-green-700 mt-2">
+                Each user card below includes: <strong>Profile URL (html_url)</strong>, 
+                detailed statistics, location information, and direct links to their GitHub profiles.
+              </p>
             </div>
 
             {/* Results Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {searchResults.map((user) => (
-                <UserCard key={user.id} user={user} />
+                <div key={user.id} className="relative">
+                  <UserCard user={user} />
+                  {/* Profile URL badge */}
+                  {user.html_url && (
+                    <div className="absolute top-2 right-2">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                        Profile URL Available
+                      </span>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
 
@@ -443,6 +550,19 @@ function Search() {
                   Showing {searchResults.length} of {Math.min(totalResults, 1000)} users
                   {totalResults > 1000 && ' (GitHub API limits to first 1000 results)'}
                 </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Each user includes their GitHub profile URL (html_url)
+                </p>
+              </div>
+            )}
+
+            {/* API Response Debug Info */}
+            {rawApiResponse && process.env.NODE_ENV === 'development' && (
+              <div className="mt-8 p-4 bg-gray-800 text-gray-200 rounded-lg">
+                <h4 className="font-mono text-sm mb-2">API Response Debug:</h4>
+                <pre className="text-xs overflow-x-auto">
+                  {formatApiResponse()}
+                </pre>
               </div>
             )}
           </div>
@@ -463,24 +583,33 @@ function Search() {
             <p className="text-gray-500 max-w-md mx-auto">
               Enter search criteria above to find GitHub users. Use advanced options for precise filtering.
             </p>
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
               <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2">Search Tips:</h4>
+                <h4 className="font-semibold text-blue-800 mb-2">📊 Enhanced Results</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Username: "torvalds in:login"</li>
-                  <li>• Location: "location:\"San Francisco\""</li>
-                  <li>• Repositories: "repos:≥100"</li>
-                  <li>• Followers: "followers:≥1000"</li>
-                  <li>• Language: "language:JavaScript"</li>
+                  <li>• Profile URLs (html_url)</li>
+                  <li>• Detailed user stats</li>
+                  <li>• Location information</li>
+                  <li>• Repository counts</li>
                 </ul>
               </div>
               <div className="p-4 bg-green-50 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">API Info:</h4>
+                <h4 className="font-semibold text-green-800 mb-2">🔍 API Features</h4>
                 <ul className="text-sm text-green-700 space-y-1">
-                  <li>• Endpoint: /search/users</li>
-                  <li>• Rate limit: 60 req/hour</li>
-                  <li>• Max results: 1000</li>
-                  <li>• Sorting: followers, repos, joined</li>
+                  <li>• Advanced search filters</li>
+                  <li>• GitHub API integration</li>
+                  <li>• Pagination support</li>
+                  <li>• Rate limit handling</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h4 className="font-semibold text-purple-800 mb-2">🚀 Quick Start</h4>
+                <ul className="text-sm text-purple-700 space-y-1">
+                  <li>• Try example searches</li>
+                  <li>• Use multiple filters</li>
+                  <li>• Sort by different criteria</li>
+                  <li>• Click profile links</li>
                 </ul>
               </div>
             </div>
@@ -514,9 +643,18 @@ function Search() {
                 >
                   Rate Limit Status
                 </a>
+                <span className="text-gray-400">•</span>
+                <a
+                  href="https://docs.github.com/en/search-github/searching-on-github/searching-users"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  User Search Syntax
+                </a>
               </div>
-              <div className="text-xs text-gray-500">
-                Rate limited to 60 requests per hour without token
+              <div className="text-xs text-gray-500 mt-2 sm:mt-0">
+                Each result includes html_url linking to the user's GitHub profile
               </div>
             </div>
           </div>
