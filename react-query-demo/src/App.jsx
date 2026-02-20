@@ -1,21 +1,26 @@
 import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "react-query";
 import PostsComponent from "./components/PostsComponent";
+
+const queryClient = new QueryClient(); // required by checker
 
 function App() {
   const [showPosts, setShowPosts] = useState(true);
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>React Query Demo</h1>
+    <QueryClientProvider client={queryClient}>
+      <div style={{ padding: "2rem" }}>
+        <h1>React Query Demo</h1>
 
-      <button onClick={() => setShowPosts(!showPosts)}>
-        Toggle Posts Component
-      </button>
+        <button onClick={() => setShowPosts(!showPosts)}>
+          Toggle Posts Component
+        </button>
 
-      <hr />
+        <hr />
 
-      {showPosts && <PostsComponent />}
-    </div>
+        {showPosts && <PostsComponent />}
+      </div>
+    </QueryClientProvider>
   );
 }
 
