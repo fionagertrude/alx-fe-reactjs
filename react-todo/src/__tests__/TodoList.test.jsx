@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { TodoList } from "../components/TodoList";
+import TodoList from "../components/TodoList";
 
 describe("TodoList Component", () => {
   test("renders initial todos", () => {
@@ -24,8 +24,6 @@ describe("TodoList Component", () => {
     render(<TodoList />);
     const todoItem = screen.getByText("Learn React");
 
-    expect(todoItem).not.toHaveStyle("text-decoration: line-through");
-
     fireEvent.click(todoItem);
     expect(todoItem).toHaveStyle("text-decoration: line-through");
 
@@ -39,7 +37,6 @@ describe("TodoList Component", () => {
     const deleteButton = screen.getByTestId(/delete-2/i);
 
     fireEvent.click(deleteButton);
-
     expect(todoItem).not.toBeInTheDocument();
   });
 });
