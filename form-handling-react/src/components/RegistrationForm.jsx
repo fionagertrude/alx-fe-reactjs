@@ -1,79 +1,38 @@
 import { useState } from "react";
 
 const RegistrationForm = () => {
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-  });
-
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [success, setSuccess] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const validate = () => {
-    let newErrors = {};
-
-    if (!formData.username) newErrors.username = "Username is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.password) newErrors.password = "Password is required";
-
-    return newErrors;
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    const validationErrors = validate();
+    let newErrors = {};
 
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    if (!username) newErrors.username = "Username is required";
+    if (!email) newErrors.email = "Email is required";
+    if (!password) newErrors.password = "Password is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    setErrors({});
-
-    // Simulate API call
-    try {
-      const response = await fetch(
-        "https://jsonplaceholder.typicode.com/users",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (response.ok) {
-        setSuccess("User registered successfully!");
-        setFormData({ username: "", email: "", password: "" });
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
+    console.log({ username, email, password });
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>Registration Form (Controlled)</h2>
+      <h2>Registration Form</h2>
 
       <div>
         <label>Username</label>
         <input
           type="text"
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
         />
         {errors.username && <p>{errors.username}</p>}
       </div>
@@ -82,9 +41,8 @@ const RegistrationForm = () => {
         <label>Email</label>
         <input
           type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
         {errors.email && <p>{errors.email}</p>}
       </div>
@@ -93,16 +51,13 @@ const RegistrationForm = () => {
         <label>Password</label>
         <input
           type="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
         {errors.password && <p>{errors.password}</p>}
       </div>
 
       <button type="submit">Register</button>
-
-      {success && <p>{success}</p>}
     </form>
   );
 };
