@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export const TodoList = () => {
+export default function TodoList() { // ✅ default export
   const [todos, setTodos] = useState([
     { id: 1, text: "Learn React", completed: false },
     { id: 2, text: "Build Todo App", completed: true },
@@ -8,12 +8,7 @@ export const TodoList = () => {
 
   const addTodo = (text) => {
     if (!text) return;
-    const newTodo = {
-      id: Date.now(),
-      text,
-      completed: false,
-    };
-    setTodos([...todos, newTodo]);
+    setTodos([...todos, { id: Date.now(), text, completed: false }]);
   };
 
   const toggleTodo = (id) => {
@@ -32,7 +27,6 @@ export const TodoList = () => {
     <div>
       <h2>Todo List</h2>
       <AddTodoForm addTodo={addTodo} />
-
       <ul>
         {todos.map((todo) => (
           <li
@@ -60,9 +54,9 @@ export const TodoList = () => {
       </ul>
     </div>
   );
-};
+}
 
-const AddTodoForm = ({ addTodo }) => {
+function AddTodoForm({ addTodo }) {
   const [text, setText] = useState("");
 
   const handleSubmit = (e) => {
@@ -84,4 +78,4 @@ const AddTodoForm = ({ addTodo }) => {
       </button>
     </form>
   );
-};
+}
